@@ -1,0 +1,56 @@
+Resources:
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      CodeUri: .
+      Handler: app.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Timeout: 30
+      MemorySize: 128
+      PackageType: Image
+      ImageUri: <your-ecr-repo-uri>
+      Environment:
+        Variables:
+          bucket: !Ref S3Bucket
+          key: steam_hardware.csv
+          order_by: name
+      TracingConfig:
+        Mode: Active
+
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: lambda-execute-s3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                Resource: !Sub 'arn:aws:s3:::${S3Bucket}/*'
+
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      DisplayName: 'Steam Hardware Order Notification'
+
+  SNSNotification:
+    Type: 'AWS::Lambda::EventSourceMapping'
+    Properties:
+      BatchSize: 1
+      EventSourceArn: !Ref SNSTopic
+      FunctionName: !Ref LambdaFunction
