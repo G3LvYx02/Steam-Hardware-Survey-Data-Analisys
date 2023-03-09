@@ -1,3 +1,3 @@
 # Steam-Hardware-Survey-Data-Analisys
 
-##elaborate data ofsteam PC component
+ ## elaborate data of steam's PC components
